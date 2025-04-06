@@ -5,13 +5,15 @@ import logging
 import threading
 
 # 配置日志记录，将错误信息记录下来方便后续排查问题
+# 设置日志级别为 ERROR，仅记录错误信息
 logging.basicConfig(level=logging.ERROR)
 
 # 创建一个蓝图，用于管理用户认证相关的路由
 auth_bp = Blueprint('auth', __name__)
 
-# 数据库操作锁
+# 数据库操作锁，用于确保多线程环境下数据库操作的线程安全
 db_lock = threading.Lock()
+
 
 def init_db():
     """
@@ -40,6 +42,7 @@ def register():
     处理用户注册请求的路由
     :return: 根据注册结果返回相应的JSON消息
     """
+    # 获取请求中的 JSON 数据
     data = request.get_json()
     username = data.get('username')
     password = data.get('password').encode()
@@ -75,6 +78,7 @@ def login():
     处理用户登录请求的路由
     :return: 根据登录结果返回相应的JSON消息或JWT令牌
     """
+    # 获取请求中的 JSON 数据
     data = request.get_json()
     username = data.get('username')
     password = data.get('password').encode()
@@ -101,5 +105,3 @@ def login():
         return jsonify(access_token=access_token)
     # 若用户名或密码不匹配，返回错误消息
     return jsonify({"msg": "Invalid credentials", "status": 401}), 401
-
-    
