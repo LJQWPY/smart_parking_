@@ -14,4 +14,5 @@ bcrypt==4.0.1
 torch==2.6.0+cu126
 # 包含YOLOv8模型的库，版本8.0.154，用于目标检测
 ultralytics==8.0.154
-    
+# Flask的CORS扩展，用于解决跨域问题
+flask-cors==4.0.0

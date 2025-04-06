@@ -1,97 +1,87 @@
 import cv2
-import threading
 import logging
-
-# 配置日志记录，将错误信息记录下来方便后续排查问题
-logging.basicConfig(level=logging.ERROR)
 
 
 class CameraManager:
+    MAX_CAMERA_ATTEMPTS = 10  # 设置最大尝试次数
+
     def __init__(self):
         """
-        初始化摄像头管理器，检测可用摄像头并初始化相关信息
+        初始化摄像头管理器，尝试打开所有可用的摄像头设备
         """
         self.cameras = {}
-        # 用于线程安全的锁，确保在多线程环境下对摄像头信息的操作安全
-        self.frame_lock = threading.Lock()
-        # 检测可用的摄像头
-        self.detect_available_cameras()
-
-    def detect_available_cameras(self):
-        """
-        检测系统中可用的摄像头，并将其信息存储在cameras字典中
-        """
-        index = 0
-        while True:
-            # 尝试打开指定索引的摄像头
-            cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)
-            if not cap.read()[0]:
-                # 若无法读取视频帧，说明该摄像头不可用，退出循环
-                break
-            else:
-                # 设置摄像头的分辨率
-                cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-                # 将可用摄像头的信息存储在cameras字典中
-                self.cameras[index] = {
-                    'cap': cap,
-                    'detector': None,
-                    'active': True
-                }
-            # 释放摄像头资源
-            cap.release()
-            index += 1
+        try:
+            logging.info("开始初始化摄像头管理器")
+            cam_id = 0
+            while cam_id < self.MAX_CAMERA_ATTEMPTS:
+                cap = cv2.VideoCapture(cam_id)
+                if cap.isOpened():
+                    self.cameras[cam_id] = cap
+                    logging.info(f"成功打开摄像头 {cam_id}")
+                    cam_id += 1
+                else:
+                    if cam_id == 0:
+                        logging.error("未检测到可用的摄像头，请检查设备连接。")
+                        raise ValueError("未检测到可用的摄像头，请检查设备连接。")
+                    break
+            logging.info("摄像头管理器初始化成功")
+        except Exception as e:
+            logging.error(f"摄像头管理器初始化失败: {str(e)}")
+            raise
 
     def get_frame(self, cam_id):
         """
-        获取指定摄像头的视频帧
-        :param cam_id: 摄像头的ID
-        :return: 视频帧数据
+        从指定的摄像头获取视频帧
+        :param cam_id: 摄像头的 ID
+        :return: 视频帧，如果获取失败则返回 None
         """
-        with self.frame_lock:
-            if cam_id in self.cameras and self.cameras[cam_id]['active']:
-                ret, frame = self.cameras[cam_id]['cap'].read()
+        logging.info(f"开始获取摄像头 {cam_id} 的视频帧")
+        cap = self.cameras.get(cam_id)
+        if cap:
+            try:
+                ret, frame = cap.read()
                 if ret:
-                    _, buffer = cv2.imencode('.jpg', frame)
-                    return buffer.tobytes()
+                    # 这里可以添加视频帧的预处理逻辑，如调整大小、编码等
+                    logging.info(f"成功获取摄像头 {cam_id} 的视频帧")
+                    return frame
+                else:
+                    logging.info(f"无法从摄像头 {cam_id} 获取视频帧")
+            except Exception as e:
+                logging.error(f"获取摄像头 {cam_id} 的视频帧出错: {str(e)}")
         return None
-
-    def get_frames(self):
-        """
-        获取所有可用摄像头的视频帧
-        :return: 包含摄像头ID和对应视频帧数据的字典
-        """
-        frames = {}
-        with self.frame_lock:
-            for cam_id, cam_info in self.cameras.items():
-                if cam_info['active']:
-                    ret, frame = cam_info['cap'].read()
-                    if ret:
-                        _, buffer = cv2.imencode('.jpg', frame)
-                        frames[cam_id] = buffer.tobytes()
-        return frames
-
-    def release(self):
-        """
-        释放所有可用摄像头的资源
-        """
-        with self.frame_lock:
-            for cam_info in self.cameras.values():
-                if cam_info['active']:
-                    cam_info['cap'].release()
 
     def toggle_camera(self, cam_id):
         """
         切换指定摄像头的开关状态
-        :param cam_id: 摄像头的ID
+        :param cam_id: 摄像头的 ID
         """
-        with self.frame_lock:
-            if cam_id in self.cameras:
-                self.cameras[cam_id]['active'] = not self.cameras[cam_id]['active']
-                if self.cameras[cam_id]['active']:
-                    self.cameras[cam_id]['cap'] = cv2.VideoCapture(cam_id, cv2.CAP_DSHOW)
-                    self.cameras[cam_id]['cap'].set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-                    self.cameras[cam_id]['cap'].set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        logging.info(f"开始切换摄像头 {cam_id} 的开关状态")
+        cap = self.cameras.get(cam_id)
+        if cap:
+            try:
+                if cap.isOpened():
+                    cap.release()
+                    del self.cameras[cam_id]
+                    logging.info(f"已关闭摄像头 {cam_id}")
                 else:
-                    self.cameras[cam_id]['cap'].release()
-    
+                    cap = cv2.VideoCapture(cam_id)
+                    if cap.isOpened():
+                        self.cameras[cam_id] = cap
+                        logging.info(f"已打开摄像头 {cam_id}")
+                    else:
+                        logging.error(f"无法打开摄像头 {cam_id}")
+            except Exception as e:
+                logging.error(f"切换摄像头 {cam_id} 的开关状态出错: {str(e)}")
+        else:
+            logging.error(f"未找到摄像头 {cam_id}")
+
+    def __del__(self):
+        """
+        析构函数，在对象销毁时释放所有摄像头资源
+        """
+        for cam_id, cap in self.cameras.items():
+            try:
+                cap.release()
+                logging.info(f"已释放摄像头 {cam_id} 的资源")
+            except Exception as e:
+                logging.error(f"释放摄像头 {cam_id} 的资源出错: {str(e)}")

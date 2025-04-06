@@ -2,6 +2,7 @@ import cv2
 import torch
 from ultralytics import YOLO
 
+
 class ParkingSpotDetector:
     def __init__(self):
         """
@@ -16,6 +17,7 @@ class ParkingSpotDetector:
             self.model.to(device)
         except Exception as e:
             import logging
+            # 若模型加载出错，记录错误信息
             logging.error(f"模型加载出错: {str(e)}，错误类型: {type(e).__name__}")
 
     def detect_objects(self, frame):
@@ -41,6 +43,6 @@ class ParkingSpotDetector:
             return detected_objects
         except Exception as e:
             import logging
+            # 若目标检测出错，记录错误信息
             logging.error(f"目标检测出错: {str(e)}，错误类型: {type(e).__name__}")
             return []
-    
