@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能停车系统</title>
+    <link rel="stylesheet" href="static/css/main.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div id="loginContainer" class="container">
+        <h2>登录</h2>
+        <form id="loginForm">
+            <input type="text" id="loginUsername" placeholder="用户名">
+            <input type="password" id="loginPassword" placeholder="密码">
+            <button type="submit">登录</button>
+        </form>
+        <a href="#" id="registerLink">注册</a>
+    </div>
+    <div id="registerContainer" class="container hidden login-register-toggle">
+        <h2>注册</h2>
+        <form id="registerForm">
+            <input type="text" id="registerUsername" placeholder="用户名">
+            <input type="password" id="registerPassword" placeholder="密码">
+            <button type="submit">注册</button>
+        </form>
+        <a href="#" id="loginLink">登录</a>
+    </div>
+    <div id="videoPanel" class="container hidden">
+        <h2>视频监控</h2>
+        <div id="videoContainer"></div>
+        <button id="logoutButton">退出登录</button>
+    </div>
+    <script src="static/js/main.js"></script>
+</body>
+
+</html>
